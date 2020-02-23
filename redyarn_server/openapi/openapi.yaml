@@ -1,0 +1,329 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: francois.lamothe@student-cs.fr
+  description: |-
+    Extract metadata from uploaded files, and output them in JSON format. Basic metadata are extracted from all files, as well as specific metadata from these types of files:
+    - plain text (txt, markdown, python, etc., unicode or ascii encoded content)
+    - csv (delimiters, line terminators, numbers of rows and columns, content)
+    - images (exif data and ascii art generated from image)
+    - pdf (various document info and text content for some files)
+    - Microsoft Office document (various document info)
+    - epub (various document info)
+    - mp3 (various info)
+    - mp4 (various info, experimental, limited results)
+
+    You can also request any or all previously extracted metadata with its identifier. Metadata will be deleted after one year. Admin privilege let you delete any or all metadata.
+    This server does not store any personnal information or ip adress. It uses passphrases to grant access to some requests, but all operations are anonymized and only the number of requests per day is logged to mitigate risk of abuse (in particular, uploaded files and metadata are NOT linked to passphrases).
+
+    Regular passphrases are limited to 10 requests per day, and can only upload files and access existing metadata. For security reasons, passphrases are NOT stored on server, we only have access to the hashes. Be sure to note down your passphrase as it cannot be recovered from the hashses if lost.
+  termsOfService: https://www.centralesupelec.fr
+  title: Red Yarn Project
+  version: "4.0"
+servers:
+- description: Production server
+  url: /openapi/
+tags:
+- description: Analyze file to extract metadata
+  name: file
+- description: Manage metadata already extracted
+  name: metadata
+- description: Manage api keys
+  name: api key
+paths:
+  /api_key:
+    delete:
+      description: Revoke an api key. This requires an admin passphrase.
+      operationId: delete_api_key
+      parameters:
+      - description: user id of api key to delete
+        explode: true
+        in: query
+        name: uid
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: api key not found
+      security:
+      - admin_passphrase: []
+      summary: Revoke an api key
+      tags:
+      - api key
+      x-openapi-router-controller: redyarn_server.controllers.api_key_controller
+    post:
+      description: Create a regular api key (limited to 10 requests per day). Requires
+        an admin passphrase.
+      operationId: add_api_key
+      parameters:
+      - description: new passphrase to generate a new regular api key
+        explode: false
+        in: query
+        name: new_passphrase
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                example:
+                  uid: user02
+          description: successful operation
+        "500":
+          description: api key not generated
+      security:
+      - admin_passphrase: []
+      summary: Create an api key with a new passphrase
+      tags:
+      - api key
+      x-openapi-router-controller: redyarn_server.controllers.api_key_controller
+  /file:
+    post:
+      description: Upload a file and get its metadata. Requires a regular passphrase.
+      operationId: post_file
+      requestBody:
+        $ref: '#/components/requestBodies/inline_object'
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metadata'
+          description: Successful operation
+        "400":
+          description: Error reading file
+      security:
+      - admin_passphrase: []
+      - passphrase: []
+      summary: Upload a file
+      tags:
+      - file
+      x-openapi-router-controller: redyarn_server.controllers.file_controller
+  /metadata/:
+    delete:
+      description: Delete the JSON metadata of a file previously uploaded on server.
+        Requires an admin passphrase.
+      operationId: delete_metadata
+      parameters:
+      - description: File ID
+        explode: true
+        in: query
+        name: idFile
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: ID not found
+      security:
+      - admin_passphrase: []
+      summary: Delete a file metadata
+      tags:
+      - metadata
+      x-openapi-router-controller: redyarn_server.controllers.metadata_controller
+    get:
+      description: Get the JSON metadata of a file previously uploaded on server.
+      operationId: get_metadata
+      parameters:
+      - description: File ID
+        explode: true
+        in: query
+        name: idFile
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metadata'
+          description: successful operation
+        "400":
+          description: ID not found
+      summary: Get a file metadata
+      tags:
+      - metadata
+      x-openapi-router-controller: redyarn_server.controllers.metadata_controller
+  /metadata/ascii-art/:
+    get:
+      description: Get the ascii-art of an image previously uploaded on server.
+      operationId: get_asciiart
+      parameters:
+      - description: File ID
+        explode: true
+        in: query
+        name: idFile
+        required: true
+        schema:
+          type: string
+        style: form
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                type: string
+          description: ascii-art
+        "400":
+          description: ID not found
+      summary: Get an image ascii-art conversion
+      tags:
+      - metadata
+      x-openapi-router-controller: redyarn_server.controllers.metadata_controller
+  /metadata/ls/:
+    delete:
+      description: Delete all metadata previously uploaded on server. This requires
+        an admin passphrase.
+      operationId: delete_all_metadata
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: cannot access metadata
+      security:
+      - admin_passphrase: []
+      summary: Delete all metadata
+      tags:
+      - metadata
+      x-openapi-router-controller: redyarn_server.controllers.metadata_controller
+    get:
+      description: List all metadata previously uploaded on server. This requires
+        an admin passphrase.
+      operationId: get_all_metadata
+      responses:
+        "200":
+          content:
+            text/html:
+              schema:
+                type: string
+          description: successful operation
+        "400":
+          description: cannot access metadata
+      summary: List all metadata
+      tags:
+      - metadata
+      x-openapi-router-controller: redyarn_server.controllers.metadata_controller
+components:
+  requestBodies:
+    inline_object:
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/inline_object'
+  schemas:
+    Metadata:
+      example:
+        filetype: Audio file with ID3 version 2.3.0
+        extension: mp3
+        id3_info:
+          key: ""
+        ascii_art: o^o
+        exif_data:
+          key: ""
+        office_info:
+          key: ""
+        csv_info:
+          key: ""
+        dateCreated: 2017-09-25
+        filename: Kaneda.mp3
+        size: 4581523
+        epub_info:
+          key: ""
+        pdf_info:
+          key: ""
+        idFile: 8ae0055b6f6898723ce5896c38b0ad60
+        mimetype: audio/mpeg
+        text: Lorem ipsum
+        mp4_info:
+          key: ""
+      properties:
+        idFile:
+          example: 8ae0055b6f6898723ce5896c38b0ad60
+          type: string
+        dateCreated:
+          example: 2017-09-25
+          type: string
+        filename:
+          example: Kaneda.mp3
+          type: string
+        mimetype:
+          example: audio/mpeg
+          type: string
+        filetype:
+          example: Audio file with ID3 version 2.3.0
+          type: string
+        size:
+          example: 4581523
+          type: integer
+        extension:
+          example: mp3
+          type: string
+        text:
+          example: Lorem ipsum
+          type: string
+        ascii_art:
+          example: o^o
+          type: string
+        image_recognition:
+          additionalProperties: {}
+          type: object
+        exif_data:
+          additionalProperties: {}
+          type: object
+        csv_info:
+          additionalProperties: {}
+          type: object
+        epub_info:
+          additionalProperties: {}
+          type: object
+        pdf_info:
+          additionalProperties: {}
+          type: object
+        office_info:
+          additionalProperties: {}
+          type: object
+        id3_info:
+          additionalProperties: {}
+          type: object
+        mp4_info:
+          additionalProperties: {}
+          type: object
+      required:
+      - idFile
+      type: object
+    inline_object:
+      properties:
+        data:
+          format: base64
+          type: string
+      type: object
+  securitySchemes:
+    passphrase:
+      description: Regular passphrase linked to an api key to authorize requests.
+        Regular passphrases are limited to 10 requests per day, and can only upload
+        files and access existing metadata. For security reasons, passphrases are
+        NOT stored on server, we only store the hashes. Be sure to note down your
+        passphrase as it cannot be recovered from the hashses if lost.
+      in: header
+      name: passphrase
+      type: apiKey
+      x-apikeyInfoFunc: redyarn_server.controllers.security_controller_.info_from_passphrase
+    admin_passphrase:
+      description: Passphrase linked to an admin api key. No usage limit. This passphrase
+        can request and revoke api keys, and delete existing metadata.
+      in: header
+      name: admin_passphrase
+      type: apiKey
+      x-apikeyInfoFunc: redyarn_server.controllers.security_controller_.info_from_admin_passphrase
