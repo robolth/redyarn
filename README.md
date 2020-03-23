@@ -1,7 +1,7 @@
 # Red Yarn Project 4.0  
 School project for CentraleSupelec. 
 
-[https://ln2e8uzlpa.execute-api.eu-west-1.amazonaws.com/dev/openapi/ui/](https://ln2e8uzlpa.execute-api.eu-west-1.amazonaws.com/dev/openapi/ui/)  
+(This API is available on [https://ln2e8uzlpa.execute-api.eu-west-1.amazonaws.com/dev/openapi/ui/](https://ln2e8uzlpa.execute-api.eu-west-1.amazonaws.com/dev/openapi/ui/))  
 
 Extract metadata from uploaded files, and output them in JSON format. Basic metadata are extracted from all files, as well as specific metadata from these types of files:  
 
