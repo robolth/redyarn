@@ -17,7 +17,8 @@ hashes_id = "hashes"
 
 # Old method on premises
 #hashes_path = 'hashes.json'
-#daily_limit = 10
+
+daily_limit = 10
 
 # We will only keep the hash of the master admin api keys for security reasons
 admin_hash = 'pbkdf2:sha256:150000$NQmwQ424$07d00bc3fa5f635695745e05770d436f68db6838dbf656ef734a677fd41b5f61'
